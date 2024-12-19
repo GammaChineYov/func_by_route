@@ -1,3 +1,8 @@
+
+import sys
+import os
+# ./
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import unittest
 from werkzeug.routing import Map, Rule
 from blueprint import Blueprint
@@ -10,7 +15,7 @@ class TestBlueprint(unittest.TestCase):
 		创建蓝图、路由和注册
 		"""
 		# 创建主蓝图和用户蓝图
-		self.app = Blueprint(name="app", url_prefix="/")
+		self.app = Blueprint(name="app", url_prefix="")
 		self.user_bp = Blueprint(name="user", url_prefix="/user")
 
 		# 注册路由
@@ -33,10 +38,7 @@ class TestBlueprint(unittest.TestCase):
 		# 注册子蓝图
 		self.app.register_blueprint(self.user_bp)
 
-		# 构建主路由映射
-		self.main_map = Map()
-		self.main_views = {}
-		self.app.register_routes(self.main_map, self.main_views)
+		self.app.register_routes(self.app.url_map, self.app.view_functions)
 
 		# 清空请求栈
 		self.app.request_stack.clear()
@@ -74,8 +76,8 @@ class TestBlueprint(unittest.TestCase):
 		"""
 		测试 is_rule_registered 方法
 		"""
-		rule = Rule("/user/", methods=["GET"])
-		registered = is_rule_registered(rule, self.main_map)
+		rule = Rule("/user/", methods=["GET"], endpoint="user.user_home")
+		registered = self.app.is_rule_registered(rule, self.app.url_map)
 		self.assertTrue(registered)
 
 if __name__ == "__main__":

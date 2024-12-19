@@ -3,15 +3,7 @@ from werkzeug.routing import Map, Rule
 from collections import deque
 import os
 
-def is_rule_registered(rule, main_map):
-	"""
-	检查规则是否已经在主路由映射中注册
-	"""
-	for r in main_map.iter_rules():
-		if r.rule == rule.rule and r.endpoint == rule.endpoint:
-			return True
-	return False
-	
+
 class Blueprint:
 	"""
 	自定义 Blueprint 类，支持嵌套路由和相对请求
@@ -53,12 +45,14 @@ class Blueprint:
 	
 		# 注册当前蓝图的路由
 		for rule in self.url_map.iter_rules():
+			full_rule = parent_prefix + rule.rule
+			print(f"[DEBUG] full_rule拼接结果: {full_rule}") # 调试语句
 			prefixed_rule = Rule(
-				parent_prefix + rule.rule,  # 路由前缀拼接
+				full_rule.replace("//", "/"),  # 路由前缀拼接，并修复重复斜杠
 				endpoint=f"{self.name}.{rule.endpoint.split('.')[-1]}",
 				methods=rule.methods,
-			)
-			if not is_rule_registered(prefixed_rule, main_map):  # 避免重复注册
+		)
+			if not self.is_rule_registered(prefixed_rule, main_map):  # 避免重复注册
 				main_map.add(prefixed_rule)
 				main_views[prefixed_rule.endpoint] = self.view_functions[rule.endpoint]
 				print(f"[DEBUG] 注册路由: {parent_prefix + rule.rule} -> {self.name}.{rule.endpoint.split('.')[-1]}")
@@ -158,3 +152,16 @@ class Blueprint:
 		# 默认回退逻辑
 		print(f"[DEBUG] 默认回退逻辑: {self.name}")
 		return f"Default back action for {self.name}"
+	
+
+	@staticmethod
+	def is_rule_registered(rule, main_map):
+		"""
+		检查规则是否已经在主路由映射中注册
+		"""
+		print(f"[DEBUG] is_rule_registered: rule={rule.rule}, endpoint={rule.endpoint}, \nmain_map={main_map}")
+		for r in main_map.iter_rules():
+			print(f"[DEBUG] 检查规则: {r.rule}, {r.endpoint}")
+			if r.rule == rule.rule and r.endpoint == rule.endpoint:
+				return True
+		return False
